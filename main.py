@@ -21,6 +21,12 @@ print(f"sheet_data:\n {sheet_data}")
 
 data_manager.destination_data = sheet_data
 data_manager.update_destination_data()
+
+# retrieve customer chat id
+
+customer_data = data_manager.get_customer_chat_id()
+
+customer_chat_id = [row["whatIsYourTelegramChatId ?"] for row in customer_data]
     
 # Search for flights
 
@@ -31,11 +37,30 @@ for destination in sheet_data:
     print(f"Getting flights for {destination['city']}....")
     flights = flight_search.get_flight_price(ORIGIN_CITY_IATA, destination["iataCode"], from_time=tomorrow, to_time=six_month_from_today)
     cheapest_flight = find_cheapest_flight(flights)
-    if cheapest_flight.price != "N/A" and cheapest_flight.price < destination["lowestPrice"]:
-        print(f"Lower Price flight found to {destination['city']}!")
-        telegram_bot_sendtext(f"Low price alert! Only Rs.{cheapest_flight.price} to fly "
+    print(f"{destination['city']}: Rs. {cheapest_flight.price}")
+    time.sleep(2)
+
+    if cheapest_flight.price == "N/A":
+        print(f"No direct flight to {destination['city']}. Looking for indirect flights....")
+        stopover_flights = flight_search.get_flight_price(ORIGIN_CITY_IATA, destination["iataCode"], from_time=tomorrow, to_time=six_month_from_today, is_direct=False)
+        cheapest_flight = find_cheapest_flight(stopover_flights)
+        print(f"Cheapest indirect flight price is : Rs. {cheapest_flight.price}")
+
+
+    # send notification on telegram
+    if cheapest_flight.price != "N/A" and cheapest_flight.price <destination["lowestPrice"]:
+        if cheapest_flight.stops == 0:
+            telegram_bot_sendtext(f"Low price alert! Only Rs.{cheapest_flight.price} to fly direct "
                         f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "
                         f"on {cheapest_flight.out_date} until {cheapest_flight.return_date}.")
+        else:
+             telegram_bot_sendtext(f"Low price alert! Only Rs.{cheapest_flight.price} to fly "
+                        f"from {cheapest_flight.origin_airport} to {cheapest_flight.destination_airport}, "
+                        f"with {cheapest_flight.stops} stops"
+                        f"departing on {cheapest_flight.out_date} and returning on {cheapest_flight.return_date}.")
+        
+        print(f"Check your email. Lower price flight found to {destination['city']}")
+
 
     
 

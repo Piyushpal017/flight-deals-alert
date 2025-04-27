@@ -22,7 +22,7 @@ print(f"sheet_data:\n {sheet_data}")
 data_manager.destination_data = sheet_data
 data_manager.update_destination_data()
 
-# retrieve customer chat id
+# Retrieve customer chat id
 
 customer_data = data_manager.get_customer_chat_id()
 
